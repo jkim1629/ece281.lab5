@@ -27,8 +27,7 @@
 
 -- Uncomment the following library declaration if instantiating
 -- any Xilinx leaf cells in this code.
-library UNISIM;
-use UNISIM.VComponents.all;
+
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
@@ -36,6 +35,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 entity controller_fsm is
     Port ( i_reset : in STD_LOGIC;
            i_adv : in STD_LOGIC;
+           i_clk : in std_logic;
            o_cycle : out STD_LOGIC_VECTOR (3 downto 0));
 end controller_fsm;
 
@@ -44,11 +44,13 @@ architecture FSM of controller_fsm is
     signal f_state : sm_cycle := s_clear;
 begin
 
-    process(i_adv, i_reset)
+    process(i_clk)
     begin   
-    if i_reset = '1' then
-        f_state <= s_clear;
-    elsif rising_edge(i_adv) then
+
+    if rising_edge(i_clk) then
+        if i_reset = '1' then
+            f_state <= s_clear;
+        elsif i_adv = '1' then
         case f_state is 
             when s_clear =>
                 f_state <= s_load_A;
@@ -59,6 +61,7 @@ begin
             when s_result =>
                 f_state <= s_clear;
          end case;
+    end if;
     end if;
 end process; 
 

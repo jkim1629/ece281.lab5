@@ -57,6 +57,7 @@ architecture top_basys3_arch of top_basys3 is
 
     component controller_fsm is
         port (
+            i_clk : in std_logic;
             i_reset : in  std_logic;
             i_adv   : in  std_logic;
             o_cycle : out std_logic_vector(3 downto 0)
@@ -109,7 +110,7 @@ architecture top_basys3_arch of top_basys3 is
         component sevenseg_decoder is
         port (
         i_hex : in std_logic_vector(3 downto 0);
-        o_seg: out std_logic_vector(6 downto 0)
+        o_seg_n: out std_logic_vector(6 downto 0)
         );
         end component;
         
@@ -141,17 +142,17 @@ architecture top_basys3_arch of top_basys3 is
         
 begin
 	-- PORT MAPS ----------------------------------------
-    u_btnC_debounce : button_debounce
-        port map (
-        clk => clk,
-        reset => btnU,
+   u_btnC_debounce : button_debounce
+    port map (
+        clk    => clk,
+        reset  => btnU,
         button => btnC,
         action => w_adv
-        
-        );
+    );
 	
 	u_controller : controller_fsm
 	   port map (
+	   i_clk => clk,
 	   i_reset => btnU,
 	   i_adv => w_adv,
 	   o_cycle => w_cycle
@@ -205,26 +206,28 @@ begin
         u_sevenseg_decoder : sevenseg_decoder
             port map (
             i_hex => w_tdm_digit,
-            o_seg => w_decoder_seg
+            o_seg_n => w_decoder_seg
             );
             
     process(clk)
-    begin
-        if rising_edge(clk) then
-            if btnU = '1' then
-                f_A <= (others => '0');
-                f_B <= (others => '0');
-                
-            elsif w_adv = '1' then  
-                if w_cycle = "0010" then
-                    f_A <= sw;
-                elsif w_cycle = "0100" then 
-                    f_B <= sw;
-                end if;
+begin
+    if rising_edge(clk) then
+        if btnU = '1' then
+            f_A <= (others => '0');
+            f_B <= (others => '0');
+
+        elsif w_adv = '1' then
+            -- currently in clear, pressing btnC enters load_A
+            if w_cycle = "0001" then
+                f_A <= sw;
+
+            -- currently in load_A, pressing btnC enters load_B
+            elsif w_cycle = "0010" then
+                f_B <= sw;
             end if;
         end if;
-    end process;
-    
+    end if;
+end process;
     
     w_display_bin <= f_A when w_cycle = "0010" else
                      f_B when w_cycle = "0100" else
